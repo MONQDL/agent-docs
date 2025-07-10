@@ -2,8 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Monq.Plugins.Abstractions;
 using Monq.Plugins.Abstractions.Models;
-using SystemMetricsPlugin.HttpServices;
-using SystemMetricsPlugin.HttpServices.Implementation;
 
 namespace SystemMetricsPlugin;
 
@@ -28,6 +26,5 @@ public class PluginTaskBootstrap : IPluginTaskBootstrap
     public void RegisterServiceProvider(IServiceCollection services, IConfiguration configuration)
     {
         services.AddTransient<PluginTaskStrategy>();
-        services.AddScoped<IMetricsDataCollectorApiHttpService, MetricsDataCollectorApiHttpService>();
     }
 }

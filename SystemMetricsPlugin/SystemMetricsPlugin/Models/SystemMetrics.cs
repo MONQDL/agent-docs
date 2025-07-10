@@ -1,4 +1,5 @@
 ﻿namespace SystemMetricsPlugin.Models;
+
 /// <summary>
 /// Represents a system's information and metrics.
 /// </summary>

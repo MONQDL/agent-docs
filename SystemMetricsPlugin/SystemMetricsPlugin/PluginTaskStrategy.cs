@@ -1,8 +1,9 @@
-﻿using Monq.Plugins.Abstractions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Monq.Plugins.Abstractions;
 using Monq.Plugins.Abstractions.Exceptions;
 using Monq.Plugins.Abstractions.Extensions;
-using System.Text;
-using SystemMetricsPlugin.HttpServices;
+using Monq.Plugins.Abstractions.Services;
 using SystemMetricsPlugin.Models;
 
 namespace SystemMetricsPlugin;
@@ -12,29 +13,36 @@ namespace SystemMetricsPlugin;
 /// </summary>
 public class PluginTaskStrategy : IPluginTaskStrategy
 {
-    readonly IMetricsDataCollectorApiHttpService _metricDataCollectorApiHttpService;
+    const string ResultKey = "result";
+
+    readonly ILogger<PluginTaskStrategy> _logger;
 
     /// <summary>
     /// Plugin Task Execution Strategy constructor.
     /// </summary>
-    /// <param name="metricDataCollectorApiHttpService">Metric Data Collector API service.</param>
-    public PluginTaskStrategy(IMetricsDataCollectorApiHttpService metricDataCollectorApiHttpService)
+    public PluginTaskStrategy(
+        IProxyServiceProvider proxyServiceProvider)
     {
-        _metricDataCollectorApiHttpService = metricDataCollectorApiHttpService;
+        _logger = proxyServiceProvider.GetRequiredService<ILogger<PluginTaskStrategy>>();
     }
 
     /// <inheritdoc/>
-    public async Task<IDictionary<string, object?>> Run(
+    public Task<IDictionary<string, object?>> Run(
         IDictionary<string, object?> variables,
         IEnumerable<string> securedVariables,
         CancellationToken cancellationToken)
     {
-        var config = variables.ToObject<TaskConfig>();
+        _logger.LogDebug("Getting system metrics...");
+
+        var config = variables.ToConfig<TaskConfig>();
         ValidateConfig(config);
         var sysMetrics = GetSystemMetrics();
-        var metricsText = ConvertToPrometheusText(sysMetrics);
-        await _metricDataCollectorApiHttpService.PushMetrics(config.BaseUri, config.StreamKey, config.UserspaceId, metricsText);
-        return new Dictionary<string, object?>();
+        var prometheusMetrics = ConvertToPrometheusText(sysMetrics);
+        var result = new Dictionary<string, object?>()
+        {
+            [ResultKey] = prometheusMetrics,
+        };
+        return Task.FromResult<IDictionary<string, object?>>(result);
     }
 
     /// <summary>
@@ -73,12 +81,13 @@ public class PluginTaskStrategy : IPluginTaskStrategy
     /// Converts the <see cref="SystemMetrics"/> object to Prometheus Text Based format.
     /// </summary>
     /// <param name="sysMetrics">system's metrics</param>
-    static string ConvertToPrometheusText(SystemMetrics sysMetrics)
+    static IEnumerable<string> ConvertToPrometheusText(SystemMetrics sysMetrics)
     {
-        var timeStamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-        var sb = new StringBuilder();
-        sb.AppendLine($@"disk_space{{machine_name=""{sysMetrics.MachineName}""}} {sysMetrics.DiskSpace} {timeStamp}");
-        sb.AppendLine($@"disk_space_usage_percent{{machine_name=""{sysMetrics.MachineName}""}} {sysMetrics.DiskSpaceUsagePercent} {timeStamp}");
-        return sb.ToString();
+        var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        return
+        [
+            $@"disk_space{{machine_name=""{sysMetrics.MachineName}""}} {sysMetrics.DiskSpace} {timestamp}",
+            $@"disk_space_usage_percent{{machine_name=""{sysMetrics.MachineName}""}} {sysMetrics.DiskSpaceUsagePercent} {timestamp}"
+        ];
     }
 }
