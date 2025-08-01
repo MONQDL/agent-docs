@@ -5,12 +5,13 @@ using Monq.Plugins.Abstractions.Exceptions;
 using Monq.Plugins.Abstractions.Extensions;
 using Monq.Plugins.Abstractions.Services;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using SystemInfoPlugin.Models;
 
 namespace SystemInfoPlugin;
 
 /// <summary>
-/// Plugin Task Execution Strategy.
+/// Plugin task execution strategy.
 /// </summary>
 public class PluginTaskStrategy : IPluginTaskStrategy
 {
@@ -19,7 +20,7 @@ public class PluginTaskStrategy : IPluginTaskStrategy
     readonly ILogger<PluginTaskStrategy> _logger;
 
     /// <summary>
-    /// Plugin Task Execution Strategy constructor.
+    /// Plugin task execution strategy constructor.
     /// </summary>
     public PluginTaskStrategy(
         IProxyServiceProvider proxyServiceProvider)
@@ -34,37 +35,45 @@ public class PluginTaskStrategy : IPluginTaskStrategy
 
         var config = variables.ToConfig<TaskConfig>();
         ValidateConfig(config);
+
         var sysInfo = GetSystemInformation();
+
+        var customFields = JsonSerializer.SerializeToNode(config.CustomFields)?.AsObject();
+        var record = JsonSerializer.SerializeToNode(sysInfo)?.AsObject();
+        SetCustomFields(record, customFields);
+
         var result = new Dictionary<string, object?>()
         {
-            [ResultKey] = JsonSerializer.Serialize(sysInfo),
+            [ResultKey] = JsonSerializer.Serialize(record),
         };
         return Task.FromResult<IDictionary<string, object?>>(result);
     }
 
-    /// <summary>
-    /// Perform validation of the <see cref="TaskConfig"/> class instance. If one of the config's properties 
-    /// contains an invalid value or is empty the method throws <see cref="PluginNotConfiguredException"/>.
-    /// </summary>
-    /// <param name="config">Config to validate.</param>
-    /// <exception cref="PluginNotConfiguredException"></exception>
     static void ValidateConfig(TaskConfig config)
     {
-        if (string.IsNullOrWhiteSpace(config.StreamKey)
-            || string.IsNullOrWhiteSpace(config.BaseUri)
-            || config.UserspaceId == 0)
+        if (config.CustomFields.Any(x => x.Value == null))
             throw new PluginNotConfiguredException();
     }
 
-    /// <summary>
-    /// Returns the <see cref="SystemInformation"/> object that contains the current system's information.
-    /// </summary>
-    /// <returns></returns>
     static SystemInformation GetSystemInformation()
     {
         return new SystemInformation()
         {
             Name = Environment.MachineName
         };
+    }
+
+    static void SetCustomFields(JsonObject? record, JsonObject? customFields)
+    {
+        if (record == null || customFields == null)
+            return;
+
+        foreach (var attr in customFields)
+        {
+            var value = attr.Value != null
+                ? JsonNode.Parse(attr.Value.ToJsonString())
+                : null;
+            record.TryAdd(attr.Key, value);
+        }
     }
 }

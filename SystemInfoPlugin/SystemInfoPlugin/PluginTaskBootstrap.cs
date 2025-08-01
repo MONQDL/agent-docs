@@ -11,13 +11,13 @@ namespace SystemInfoPlugin;
 public class PluginTaskBootstrap : IPluginTaskBootstrap
 {
     /// <summary>
-    /// The name of the plugin.
+    /// Plugin name.
     /// </summary>
     const string Name = "System Information Plugin";
     /// <summary>
-    /// The name of the plugin's command.
+    /// Plugin execution command.
     /// </summary>
-    const string Command = "SystemInfoPlugin";
+    const string Command = "systemInfoPlugin";
 
     /// <inheritdoc/>
     public PluginTask PluginTask => new(Name, Command, typeof(PluginTaskStrategy));

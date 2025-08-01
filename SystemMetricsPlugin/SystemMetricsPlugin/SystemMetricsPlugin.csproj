@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Fennel" Version="0.3.0" />
     <PackageReference Include="Monq.Plugins.Abstractions" Version="3.0.0">
       <Private>false</Private>
       <ExcludeAssets>runtime</ExcludeAssets>

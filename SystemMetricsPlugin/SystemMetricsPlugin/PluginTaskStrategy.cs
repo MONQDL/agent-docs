@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Fennel.CSharp;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Monq.Plugins.Abstractions;
 using Monq.Plugins.Abstractions.Exceptions;
@@ -9,7 +10,7 @@ using SystemMetricsPlugin.Models;
 namespace SystemMetricsPlugin;
 
 /// <summary>
-/// Plugin Task Execution Strategy.
+/// Plugin task execution strategy.
 /// </summary>
 public class PluginTaskStrategy : IPluginTaskStrategy
 {
@@ -18,7 +19,7 @@ public class PluginTaskStrategy : IPluginTaskStrategy
     readonly ILogger<PluginTaskStrategy> _logger;
 
     /// <summary>
-    /// Plugin Task Execution Strategy constructor.
+    /// Plugin task execution strategy constructor.
     /// </summary>
     public PluginTaskStrategy(
         IProxyServiceProvider proxyServiceProvider)
@@ -36,58 +37,76 @@ public class PluginTaskStrategy : IPluginTaskStrategy
 
         var config = variables.ToConfig<TaskConfig>();
         ValidateConfig(config);
-        var sysMetrics = GetSystemMetrics();
-        var prometheusMetrics = ConvertToPrometheusText(sysMetrics);
+
+        var customLabels = config.CustomFields
+            .Select(kvp => KeyValuePair.Create(kvp.Key, kvp.Value?.ToString() ?? string.Empty))
+            .Select(kvp => new PrometheusLabel
+            {
+                Name = kvp.Key,
+                Value = kvp.Value,
+            })
+            .ToList();
+        var prometheusMetrics = GetSystemMetrics(customLabels);
+        var prometheusTextMetrics = ConvertToPrometheusText(prometheusMetrics);
+
         var result = new Dictionary<string, object?>()
         {
-            [ResultKey] = prometheusMetrics,
+            [ResultKey] = prometheusTextMetrics,
         };
         return Task.FromResult<IDictionary<string, object?>>(result);
     }
 
-    /// <summary>
-    /// Perform validation of the <see cref="TaskConfig"/> class instance. If one of the config's properties 
-    /// contains an invalid value or is empty the method throws <see cref="PluginNotConfiguredException"/>.
-    /// </summary>
-    /// <param name="config">Config to validate.</param>
-    /// <exception cref="PluginNotConfiguredException"></exception>
     static void ValidateConfig(TaskConfig config)
     {
-        if (string.IsNullOrWhiteSpace(config.StreamKey)
-            || string.IsNullOrWhiteSpace(config.BaseUri)
-            || config.UserspaceId == 0)
+        if (config.CustomFields.Any(x => x.Value == null))
             throw new PluginNotConfiguredException();
     }
 
-    /// <summary>
-    /// Returns the <see cref="SystemMetrics"/> object that contains the current system's metrics.
-    /// </summary>
-    static SystemMetrics GetSystemMetrics()
+    static List<PrometheusMetric> GetSystemMetrics(IEnumerable<PrometheusLabel> customLabels)
     {
         var drives = DriveInfo.GetDrives();
         var totalFreeSpace = drives.Sum(x => x.TotalFreeSpace);
         var totalSpace = drives.Sum(x => x.TotalSize);
         var diskSpaceUsagePercent = (1.0 - (double)totalFreeSpace / totalSpace) * 100;
+        var machineName = Environment.MachineName;
+        var timestamp = DateTimeOffset.Now;
 
-        return new SystemMetrics()
+        var result = new List<PrometheusMetric>
         {
-            MachineName = Environment.MachineName,
-            DiskSpace = totalSpace,
-            DiskSpaceUsagePercent = diskSpaceUsagePercent
+            new()
+            {
+                Name = "disk_space",
+                Labels = [new() { Name = "machine_name", Value = machineName }],
+                Sample = totalSpace,
+                Timestamp = timestamp,
+            },
+            new()
+            {
+                Name = "disk_space_usage_percent",
+                Labels = [new() { Name = "machine_name", Value = machineName }],
+                Sample = diskSpaceUsagePercent,
+                Timestamp = timestamp,
+            },
         };
+
+        foreach (var label in customLabels)
+            foreach (var metric in result)
+                metric.Labels.Add(label);
+        return result;
     }
 
-    /// <summary>
-    /// Converts the <see cref="SystemMetrics"/> object to Prometheus Text Based format.
-    /// </summary>
-    /// <param name="sysMetrics">system's metrics</param>
-    static IEnumerable<string> ConvertToPrometheusText(SystemMetrics sysMetrics)
+    static List<string> ConvertToPrometheusText(IEnumerable<PrometheusMetric> metrics)
     {
-        var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-        return
-        [
-            $@"disk_space{{machine_name=""{sysMetrics.MachineName}""}} {sysMetrics.DiskSpace} {timestamp}",
-            $@"disk_space_usage_percent{{machine_name=""{sysMetrics.MachineName}""}} {sysMetrics.DiskSpaceUsagePercent} {timestamp}"
-        ];
+        var result = new List<string>();
+        foreach (var metric in metrics)
+        {
+            var prometheusString = Prometheus.Metric(
+                metric.Name,
+                metric.Sample,
+                metric.Labels.ToDictionary(l => l.Name, l => l.Value),
+                metric.Timestamp);
+            result.Add(prometheusString);
+        }
+        return result;
     }
 }

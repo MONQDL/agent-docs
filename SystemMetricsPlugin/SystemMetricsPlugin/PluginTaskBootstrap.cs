@@ -11,13 +11,13 @@ namespace SystemMetricsPlugin;
 public class PluginTaskBootstrap : IPluginTaskBootstrap
 {
     /// <summary>
-    /// The name of the plugin.
+    /// Plugin name.
     /// </summary>
     const string Name = "System Metrics Plugin";
     /// <summary>
-    /// The name of the plugin's command.
+    /// Plugin execution command.
     /// </summary>
-    const string Command = "SystemMetricsPlugin";
+    const string Command = "systemMetricsPlugin";
 
     /// <inheritdoc/>
     public PluginTask PluginTask => new(Name, Command, typeof(PluginTaskStrategy));
