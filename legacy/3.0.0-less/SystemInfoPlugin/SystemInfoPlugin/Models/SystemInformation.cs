@@ -1,12 +1,12 @@
 ﻿namespace SystemInfoPlugin.Models;
 
 /// <summary>
-/// System information.
+/// Represents a system's information.
 /// </summary>
 public class SystemInformation
 {
     /// <summary>
-    /// System name.
+    /// Represents a name of a system.
     /// </summary>
     public string Name { get; set; } = string.Empty;
 }
