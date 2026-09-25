@@ -2,9 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Monq.Plugins.Abstractions;
 using Monq.Plugins.Abstractions.Models;
-using SystemInfoPlugin.Services;
 
-namespace SystemInfoPlugin;
+namespace SystemMetricsPlugin;
 
 /// <summary>
 /// Plugin task bootstrap service. Intended to register <see cref="PluginTask"/> and dependencies in a DI container (<see cref="IServiceCollection"/>).
@@ -14,11 +13,11 @@ public class PluginTaskBootstrap : IPluginTaskBootstrap
     /// <summary>
     /// Plugin name.
     /// </summary>
-    const string Name = "System Information Plugin";
+    const string Name = "System Metrics Plugin";
     /// <summary>
     /// Plugin execution command.
     /// </summary>
-    const string Command = "systemInfoPlugin";
+    const string Command = "systemMetricsPlugin";
 
     /// <inheritdoc/>
     public PluginTask PluginTask => new(Name, Command, typeof(PluginTaskStrategy));
@@ -26,7 +25,6 @@ public class PluginTaskBootstrap : IPluginTaskBootstrap
     /// <inheritdoc/>
     public void RegisterServiceProvider(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<ISystemInformationProvider, SystemInformationProvider>();
         services.AddTransient<PluginTaskStrategy>();
     }
 }

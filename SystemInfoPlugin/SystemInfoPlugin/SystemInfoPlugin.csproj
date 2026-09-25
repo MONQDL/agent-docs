@@ -3,13 +3,13 @@
   <PropertyGroup>
     <Version>1.0.0</Version>
     <AssemblyName>systemInfoPlugin</AssemblyName>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Monq.Plugins.Abstractions" Version="3.0.0">
+    <PackageReference Include="Monq.Plugins.Abstractions" Version="4.0.0-rev-36038457687">
       <Private>false</Private>
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>

@@ -1,12 +1,14 @@
-﻿namespace SystemMetricsPlugin.Models;
+using System.Text.Json.Nodes;
+
+namespace SystemMetricsPlugin.Models;
 
 /// <summary>
 /// Task configuration.
 /// </summary>
-public class TaskConfig
+public sealed class TaskConfig
 {
     /// <summary>
-    /// Custom fields.
+    /// Custom fields represented as Prometheus labels.
     /// </summary>
-    public Dictionary<string, object?> CustomFields { get; set; } = [];
+    public Dictionary<string, JsonNode?> CustomFields { get; init; } = [];
 }

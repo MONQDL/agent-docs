@@ -2,11 +2,12 @@
 using Microsoft.Extensions.Logging;
 using Monq.Plugins.Abstractions;
 using Monq.Plugins.Abstractions.Exceptions;
-using Monq.Plugins.Abstractions.Extensions;
+using Monq.Plugins.Abstractions.Models;
 using Monq.Plugins.Abstractions.Services;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using SystemInfoPlugin.Models;
+using SystemInfoPlugin.Services;
 
 namespace SystemInfoPlugin;
 
@@ -15,38 +16,43 @@ namespace SystemInfoPlugin;
 /// </summary>
 public class PluginTaskStrategy : IPluginTaskStrategy
 {
+    const string NameKey = "name";
     const string ResultKey = "result";
 
     readonly ILogger<PluginTaskStrategy> _logger;
+    readonly ISystemInformationProvider _systemInformationProvider;
 
     /// <summary>
     /// Plugin task execution strategy constructor.
     /// </summary>
     public PluginTaskStrategy(
-        IProxyServiceProvider proxyServiceProvider)
+        IProxyServiceProvider proxyServiceProvider,
+        ISystemInformationProvider systemInformationProvider)
     {
         _logger = proxyServiceProvider.GetRequiredService<ILogger<PluginTaskStrategy>>();
+        _systemInformationProvider = systemInformationProvider;
     }
 
     /// <inheritdoc/>
-    public Task<IDictionary<string, object?>> Run(IDictionary<string, object?> variables, IEnumerable<string> securedVariables, CancellationToken cancellationToken)
+    public Task<JsonObject> Run(
+        PluginTaskContext context,
+        CancellationToken cancellationToken)
     {
         _logger.LogDebug("Getting system info...");
 
-        var config = variables.ToConfig<TaskConfig>();
+        var config = JsonSerializer.Deserialize(
+            context.Variables,
+            PluginJsonSerializerContext.Default.TaskConfig) ?? new();
         ValidateConfig(config);
 
-        var sysInfo = GetSystemInformation();
+        var record = GetSystemInformation();
+        SetCustomFields(record, config.CustomFields);
 
-        var customFields = JsonSerializer.SerializeToNode(config.CustomFields)?.AsObject();
-        var record = JsonSerializer.SerializeToNode(sysInfo)?.AsObject();
-        SetCustomFields(record, customFields);
-
-        var result = new Dictionary<string, object?>()
+        var result = new JsonObject
         {
-            [ResultKey] = JsonSerializer.Serialize(record),
+            [ResultKey] = record.ToJsonString(),
         };
-        return Task.FromResult<IDictionary<string, object?>>(result);
+        return Task.FromResult(result);
     }
 
     static void ValidateConfig(TaskConfig config)
@@ -55,25 +61,19 @@ public class PluginTaskStrategy : IPluginTaskStrategy
             throw new PluginNotConfiguredException();
     }
 
-    static SystemInformation GetSystemInformation()
+    JsonObject GetSystemInformation()
     {
-        return new SystemInformation()
+        return new JsonObject
         {
-            Name = Environment.MachineName
+            [NameKey] = _systemInformationProvider.GetMachineName(),
         };
     }
 
-    static void SetCustomFields(JsonObject? record, JsonObject? customFields)
+    static void SetCustomFields(
+        JsonObject record,
+        IReadOnlyDictionary<string, JsonNode?> customFields)
     {
-        if (record == null || customFields == null)
-            return;
-
         foreach (var attr in customFields)
-        {
-            var value = attr.Value != null
-                ? JsonNode.Parse(attr.Value.ToJsonString())
-                : null;
-            record.TryAdd(attr.Key, value);
-        }
+            record.TryAdd(attr.Key, attr.Value?.DeepClone());
     }
 }
