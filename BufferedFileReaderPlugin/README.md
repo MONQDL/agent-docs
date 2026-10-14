@@ -4,7 +4,7 @@
 через `PluginTaskContext.WriteOutput`. Буферизацией, формированием чанков и отправкой управляет агент
 на основании секций `buffer` и `artifacts` непрерывного задания.
 
-Команда плагина: `bufferedFileReaderPlugin`.
+Команда плагина: `bufferedFileReader`.
 
 Пример задания:
 
@@ -17,7 +17,7 @@ continuous-jobs:
     input-name: buffered-file-reader.input
     chunk-size: 32768
   init-step:
-    plugin: bufferedFileReaderPlugin
+    plugin: bufferedFileReader
     with:
       filePath: C:\logs\application.log
     outputs:

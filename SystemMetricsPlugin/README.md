@@ -3,7 +3,7 @@
 Базовый пример плагина для формирования метрик в текстовом формате Prometheus. Плагин возвращает
 общий объём дисков и процент занятого пространства.
 
-Команда плагина: `systemMetricsPlugin`.
+Команда плагина: `systemMetrics`.
 
 Пример задания:
 
@@ -12,7 +12,7 @@ name: System Metrics Gathering Task
 jobs:
 - name: System Metrics Gathering Job
   steps:
-  - plugin: systemMetricsPlugin
+  - plugin: systemMetrics
     with:
       customFields:
         source: system-metrics

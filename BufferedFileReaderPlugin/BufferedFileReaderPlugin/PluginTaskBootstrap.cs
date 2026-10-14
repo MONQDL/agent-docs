@@ -11,7 +11,7 @@ namespace BufferedFileReaderPlugin;
 public sealed class PluginTaskBootstrap : IPluginTaskBootstrap
 {
     const string Name = "Buffered File Reader Plugin";
-    const string Command = "bufferedFileReaderPlugin";
+    const string Command = "bufferedFileReader";
 
     /// <inheritdoc/>
     public PluginTask PluginTask { get; } = new(Name, Command, typeof(PluginTaskStrategy));

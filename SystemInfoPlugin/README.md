@@ -3,7 +3,7 @@
 Базовый пример плагина для формирования лога. Плагин возвращает имя компьютера и добавляет к
 записи пользовательские поля из `customFields`.
 
-Команда плагина: `systemInfoPlugin`.
+Команда плагина: `systemInfo`.
 
 Пример задания:
 
@@ -12,7 +12,7 @@ name: System Info Gathering Task
 jobs:
 - name: System Info Gathering Job
   steps:
-  - plugin: systemInfoPlugin
+  - plugin: systemInfo
     with:
       customFields:
         source: system-info
