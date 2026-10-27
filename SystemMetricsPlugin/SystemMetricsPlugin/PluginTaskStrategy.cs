@@ -3,8 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Monq.Plugins.Abstractions;
 using Monq.Plugins.Abstractions.Exceptions;
-using Monq.Plugins.Abstractions.Extensions;
+using Monq.Plugins.Abstractions.Models;
 using Monq.Plugins.Abstractions.Services;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using SystemMetricsPlugin.Models;
 
 namespace SystemMetricsPlugin;
@@ -28,32 +30,36 @@ public class PluginTaskStrategy : IPluginTaskStrategy
     }
 
     /// <inheritdoc/>
-    public Task<IDictionary<string, object?>> Run(
-        IDictionary<string, object?> variables,
-        IEnumerable<string> securedVariables,
+    public Task<JsonObject> Run(
+        PluginTaskContext context,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Getting system metrics...");
 
-        var config = variables.ToConfig<TaskConfig>();
+        var config = JsonSerializer.Deserialize(
+            context.Variables,
+            PluginJsonSerializerContext.Default.TaskConfig) ?? new();
         ValidateConfig(config);
 
         var customLabels = config.CustomFields
-            .Select(kvp => KeyValuePair.Create(kvp.Key, kvp.Value?.ToString() ?? string.Empty))
             .Select(kvp => new PrometheusLabel
             {
                 Name = kvp.Key,
-                Value = kvp.Value,
+                Value = GetLabelValue(kvp.Value),
             })
             .ToList();
         var prometheusMetrics = GetSystemMetrics(customLabels);
         var prometheusTextMetrics = ConvertToPrometheusText(prometheusMetrics);
 
-        var result = new Dictionary<string, object?>()
+        var resultItems = new JsonArray();
+        foreach (var metric in prometheusTextMetrics)
+            resultItems.Add(metric);
+
+        var result = new JsonObject
         {
-            [ResultKey] = prometheusTextMetrics,
+            [ResultKey] = resultItems,
         };
-        return Task.FromResult<IDictionary<string, object?>>(result);
+        return Task.FromResult(result);
     }
 
     static void ValidateConfig(TaskConfig config)
@@ -61,6 +67,11 @@ public class PluginTaskStrategy : IPluginTaskStrategy
         if (config.CustomFields.Any(x => x.Value == null))
             throw new PluginNotConfiguredException();
     }
+
+    static string GetLabelValue(JsonNode? value)
+        => value is JsonValue jsonValue && jsonValue.TryGetValue<string>(out var stringValue)
+            ? stringValue
+            : value?.ToJsonString() ?? string.Empty;
 
     static List<PrometheusMetric> GetSystemMetrics(IEnumerable<PrometheusLabel> customLabels)
     {

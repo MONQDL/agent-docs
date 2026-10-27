@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Monq.Plugins.Abstractions;
 using Monq.Plugins.Abstractions.Models;
+using SystemInfoPlugin.Services;
 
 namespace SystemInfoPlugin;
 
@@ -17,7 +18,7 @@ public class PluginTaskBootstrap : IPluginTaskBootstrap
     /// <summary>
     /// Plugin execution command.
     /// </summary>
-    const string Command = "systemInfoPlugin";
+    const string Command = "systemInfo";
 
     /// <inheritdoc/>
     public PluginTask PluginTask => new(Name, Command, typeof(PluginTaskStrategy));
@@ -25,6 +26,7 @@ public class PluginTaskBootstrap : IPluginTaskBootstrap
     /// <inheritdoc/>
     public void RegisterServiceProvider(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<ISystemInformationProvider, SystemInformationProvider>();
         services.AddTransient<PluginTaskStrategy>();
     }
 }

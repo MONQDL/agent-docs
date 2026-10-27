@@ -17,7 +17,7 @@ public class PluginTaskBootstrap : IPluginTaskBootstrap
     /// <summary>
     /// Plugin execution command.
     /// </summary>
-    const string Command = "systemMetricsPlugin";
+    const string Command = "systemMetrics";
 
     /// <inheritdoc/>
     public PluginTask PluginTask => new(Name, Command, typeof(PluginTaskStrategy));
