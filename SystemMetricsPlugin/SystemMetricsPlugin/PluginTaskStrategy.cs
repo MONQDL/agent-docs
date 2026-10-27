@@ -1,4 +1,4 @@
-﻿using Fennel.CSharp;
+﻿using Monq.Plugins.Extensions.Prometheus;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Monq.Plugins.Abstractions;
@@ -111,7 +111,7 @@ public class PluginTaskStrategy : IPluginTaskStrategy
         var result = new List<string>();
         foreach (var metric in metrics)
         {
-            var prometheusString = Prometheus.Metric(
+            var prometheusString = PrometheusParser.MetricLine(
                 metric.Name,
                 metric.Sample,
                 metric.Labels.ToDictionary(l => l.Name, l => l.Value),
