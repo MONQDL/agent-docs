@@ -2,7 +2,7 @@
 
 > [!WARNING]
 > Реализации плагинов совместимы с версиями агента >= 4.0.0 и используют
-> `Monq.Plugins.Abstractions` 4.0.0 (`4.0.0-rev-36038457687`) и .NET 10.
+> `Monq.Plugins.Abstractions` 4.0.0 и .NET 10.
 > Реализации для более старых версий агента расположены в директории [legacy](https://github.com/MONQDL/agent-docs/tree/master/legacy).
 
 * [SystemInfoPlugin](https://github.com/MONQDL/agent-docs/tree/master/SystemInfoPlugin) пример пользовательского плагина, который получает системную информацию (имя компьютера, на котором запущен плагин) и демонстрирует регистрацию и внедрение собственного сервиса через DI. Руководство [Создание плагина для отправки логов (событийной информации)](https://github.com/MONQDL/agent-docs/wiki/%D0%A1%D0%BE%D0%B7%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-%D0%BF%D0%BB%D0%B0%D0%B3%D0%B8%D0%BD%D0%B0-%D0%B4%D0%BB%D1%8F-%D0%BE%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D0%BA%D0%B8-%D0%BB%D0%BE%D0%B3%D0%BE%D0%B2-(%D1%81%D0%BE%D0%B1%D1%8B%D1%82%D0%B8%D0%B9%D0%BD%D0%BE%D0%B9-%D0%B8%D0%BD%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%86%D0%B8%D0%B8)) описывает по шагам процесс создания этого плагина.
