@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Monq.Plugins.Abstractions" Version="4.0.0-rev-36038457687">
+    <PackageReference Include="Monq.Plugins.Abstractions" Version="4.0.0">
       <Private>false</Private>
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
